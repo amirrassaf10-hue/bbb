@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>Chat 2</title>
+<style>
+body{font-family:Arial;text-align:center;background:#111;color:white}
+input,button{padding:10px;margin:5px;border-radius:8px}
+#chat{width:90%;height:300px;background:#222;overflow:auto;margin:20px auto;text-align:right;padding:10px}
+</style>
+</head>
+<body>
+
+<h2>چت نفر دوم</h2>
+
+<div>کد شما:</div>
+<h1 id="myCode">...</h1>
+
+<input id="code" placeholder="کد طرف مقابل">
+<button onclick="connect()">اتصال</button>
+
+<div id="chat"></div>
+
+<input id="msg" placeholder="پیام">
+<button onclick="send()">ارسال</button>
+
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+
+<script>
+
+let peer;
+let conn;
+
+
+function log(t){
+ document.getElementById("chat").innerHTML+=t+"<br>";
+}
+
+
+function makeCode(){
+ return Math.floor(100+Math.random()*900).toString();
+}
+
+
+peer=new Peer(makeCode());
+
+
+peer.on("open",id=>{
+ document.getElementById("myCode").innerHTML=id;
+});
+
+
+peer.on("connection",c=>{
+
+conn=c;
+
+log("وصل شد ✅");
+
+conn.on("data",d=>{
+ log("طرف مقابل: "+d);
+});
+
+});
+
+
+function connect(){
+
+let code=document.getElementById("code").value;
+
+conn=peer.connect(code);
+
+
+conn.on("open",()=>{
+ log("وصل شد ✅");
+});
+
+
+conn.on("data",d=>{
+ log("طرف مقابل: "+d);
+});
+
+
+}
+
+
+function send(){
+
+let m=document.getElementById("msg").value;
+
+if(conn){
+
+conn.send(m);
+
+log("من: "+m);
+
+}
+
+}
+
+</script>
+
+</body>
+</html>
