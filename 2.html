@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تماس تصویری - نفر دوم</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#101114;color:#fff;font-family:Arial,sans-serif;text-align:center}main{max-width:900px;margin:auto;padding:20px}.code{font-size:46px;font-weight:700;letter-spacing:9px;margin:12px}button,input{font:inherit;padding:12px 16px;margin:6px;border-radius:10px;border:0}button{cursor:pointer}video{width:46%;max-height:420px;background:#000;border-radius:12px;margin:5px}#status{color:#bbb;margin:12px}
+</style>
+</head>
+<body>
+<main>
+<h2>تماس تصویری — نفر دوم</h2>
+<div>کد ۳ رقمی شما:</div>
+<div id="code" class="code">...</div>
+<div id="status">در حال آماده‌سازی...</div>
+<input id="remoteCode" inputmode="numeric" maxlength="3" placeholder="کد نفر دوم">
+<button id="callBtn">اتصال</button>
+<button id="startBtn">دوربین و میکروفون</button>
+<div><video id="local" autoplay muted playsinline></video><video id="remote" autoplay playsinline></video></div>
+</main>
+<script src="./peerjs.min.js"></script>
+<script>
+'use strict';
+const ICE={iceServers:[
+ {urls:'stun:stun.relay.metered.ca:80'},
+ {urls:'turn:global.relay.metered.ca:80',username:'efcfeb545e453332b5c7a90b',credential:'NrZzy/0mimKCuA8R'},
+ {urls:'turn:global.relay.metered.ca:80?transport=tcp',username:'efcfeb545e453332b5c7a90b',credential:'NrZzy/0mimKCuA8R'},
+ {urls:'turn:global.relay.metered.ca:443',username:'efcfeb545e453332b5c7a90b',credential:'NrZzy/0mimKCuA8R'},
+ {urls:'turns:global.relay.metered.ca:443?transport=tcp',username:'efcfeb545e453332b5c7a90b',credential:'NrZzy/0mimKCuA8R'}
+]};
+let peer=null,stream=null;
+const $=id=>document.getElementById(id),status=t=>$('status').textContent=t;
+function code(){return String(Math.floor(100+Math.random()*900));}
+async function camera(){if(stream)return stream;stream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});$('local').srcObject=stream;status('دوربین و میکروفون آماده است.');return stream;}
+function makePeer(){
+ if(typeof Peer==='undefined'){status('PeerJS پیدا نشد. فایل peerjs.min.js را کنار 1.html قرار بده.');return;}
+ const id=code(); peer=new Peer(id,{host:'0.peerjs.com',port:443,path:'/',secure:true,config:ICE,debug:2});
+ peer.on('open',id=>{$('code').textContent=id;status('آماده است؛ کد ۳ رقمی را به نفر دوم بده.')});
+ peer.on('call',async call=>{try{await camera();call.answer(stream);call.on('stream',s=>$('remote').srcObject=s)}catch(e){status('خطای دوربین: '+e.message)}});
+ peer.on('error',e=>{console.error(e);if(e.type==='unavailable-id'){status('کد تکراری بود؛ در حال ساخت کد جدید...');setTimeout(makePeer,300)}else status('خطای PeerJS: '+e.type)});
+ peer.on('disconnected',()=>status('اتصال سرور قطع شد؛ در حال تلاش مجدد...'));
+}
+$('startBtn').onclick=()=>camera().catch(e=>status('خطای دوربین/میکروفون: '+e.message));
+$('callBtn').onclick=async()=>{const id=$('remoteCode').value.trim();if(!/^\d{3}$/.test(id)){status('کد باید دقیقاً ۳ رقم باشد.');return}try{await camera();const call=peer.call(id,stream);call.on('stream',s=>$('remote').srcObject=s);call.on('error',e=>status('خطای تماس: '+e.message));status('در حال اتصال به '+id+' ...')}catch(e){status('خطا: '+e.message)}};
+window.addEventListener('load',makePeer);
+</script>
+</body>
+</html>
