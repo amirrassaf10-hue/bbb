@@ -1,0 +1,27 @@
+<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تماس تصویری</title>
+<style>body{margin:0;background:#111;color:#fff;font-family:Arial;text-align:center}main{max-width:900px;margin:auto;padding:16px}button,input{padding:11px;margin:5px;border-radius:8px;border:0}video{width:46%;background:#000;border-radius:10px;margin:5px;vertical-align:top}#log{white-space:pre-wrap;text-align:left;direction:ltr;background:#202124;padding:12px;border-radius:8px;min-height:120px;font-family:monospace;font-size:13px}</style></head><body><main>
+<h2>تماس تصویری — نفر دوم</h2><div>کد شما:</div><h1 id="myid">...</h1>
+<input id="code" inputmode="numeric" maxlength="3" placeholder="کد طرف مقابل"><button id="call">اتصال</button><button id="media">دوربین و میکروفون</button>
+<div><video id="local" autoplay muted playsinline></video><video id="remote" autoplay playsinline controls></video></div>
+<h3>وضعیت</h3><div id="log">در حال شروع...</div>
+<script src="./peerjs.min.js"></script><script>
+const ICE={iceServers:[
+{urls:"stun:stun.relay.metered.ca:80"},
+{urls:"turn:global.relay.metered.ca:80",username:"862ddd91337545f849e0d691",credential:"xw2Kc2SaP7mcjPZo"},
+{urls:"turn:global.relay.metered.ca:80?transport=tcp",username:"862ddd91337545f849e0d691",credential:"xw2Kc2SaP7mcjPZo"},
+{urls:"turn:global.relay.metered.ca:443",username:"862ddd91337545f849e0d691",credential:"xw2Kc2SaP7mcjPZo"},
+{urls:"turns:global.relay.metered.ca:443?transport=tcp",username:"862ddd91337545f849e0d691",credential:"xw2Kc2SaP7mcjPZo"}
+]};
+const logEl=document.getElementById('log'), local=document.getElementById('local'), remote=document.getElementById('remote'); let stream=null,peer=null;
+function log(x){logEl.textContent+=x+"\n";}
+function showStream(s){log("Media: remote stream received"); log("Tracks: video="+s.getVideoTracks().length+" audio="+s.getAudioTracks().length); remote.srcObject=s; remote.muted=false; remote.play().then(()=>log("Remote video.play(): OK")).catch(e=>log("Remote video.play() ERROR: "+e.name+" - "+e.message));}
+async function getMedia(){if(stream)return stream; stream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});local.srcObject=stream;log("Local media: OK");return stream;}
+if(typeof Peer==="undefined"){log("ERROR: peerjs.min.js لود نشده است");} else {
+peer=new Peer(String(Math.floor(100+Math.random()*900)),{host:"0.peerjs.com",port:443,path:"/",secure:true,config:ICE,debug:2});
+peer.on("open",id=>{document.getElementById('myid').textContent=id;log("Signaling: OK | Peer ID: "+id);});
+peer.on("error",e=>log("Peer error: "+e.type+" | "+e.message));
+peer.on("call",async call=>{log("Incoming call from: "+call.peer);try{await getMedia();call.answer(stream);call.on("stream",showStream);call.on("close",()=>log("Call closed"));call.on("error",e=>log("Call error: "+e.message));}catch(e){log("Media ERROR: "+e.message)}});
+}
+document.getElementById('media').onclick=()=>getMedia().catch(e=>log("Media ERROR: "+e.name+" - "+e.message));
+document.getElementById('call').onclick=async()=>{const id=document.getElementById('code').value.trim();if(!/^\d{3}$/.test(id))return log("کد باید ۳ رقم باشد");try{await getMedia();const c=peer.call(id,stream);log("Call started -> "+id);c.on("stream",showStream);c.on("close",()=>log("Call closed"));c.on("error",e=>log("Call error: "+e.message));}catch(e){log("Call start ERROR: "+e.message)}};
+</script></main></body></html>
